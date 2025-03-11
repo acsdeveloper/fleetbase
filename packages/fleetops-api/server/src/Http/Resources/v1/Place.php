@@ -6,6 +6,7 @@ use Fleetbase\Http\Resources\FleetbaseResource;
 use Fleetbase\LaravelMysqlSpatial\Types\Point;
 use Fleetbase\Support\Http;
 use Fleetbase\Support\Resolve;
+use App\Services\LocationTranslatorService;
 
 class Place extends FleetbaseResource
 {
@@ -18,6 +19,13 @@ class Place extends FleetbaseResource
      */
     public function toArray($request)
     {
+        $locale = app()->getLocale();
+        echo $locale."locale";
+        $locationService = null;
+        if ($locale) {
+            $locationService = app(LocationTranslatorService::class);
+           
+        }   
         return [
             'id'                    => $this->when(Http::isInternalRequest(), $this->id, $this->public_id),
             'uuid'                  => $this->when(Http::isInternalRequest(), $this->uuid),
@@ -25,7 +33,7 @@ class Place extends FleetbaseResource
             'company_uuid'          => $this->when(Http::isInternalRequest(), $this->company_uuid),
             'owner_uuid'            => $this->when(Http::isInternalRequest(), $this->owner_uuid),
             'owner_type'            => $this->when(Http::isInternalRequest(), $this->owner_type),
-            'name'                  => $this->name,
+            'name'                  => $locationService->translateCity($this->name, $locale),
             'location'              => data_get($this, 'location', new Point(0, 0)),
             'address'               => $this->address,
             'address_html'          => $this->when(Http::isInternalRequest(), $this->address_html),

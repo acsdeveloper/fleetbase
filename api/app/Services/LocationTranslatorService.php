@@ -6,22 +6,26 @@ use Illuminate\Support\Facades\Lang;
 
 class LocationTranslatorService
 {
-    public function translateLocation($locationName, $locale = null)
+    /**
+     * Translate a city name to the specified locale
+     *
+     * @param string $cityName
+     * @param string|null $locale
+     * @return string
+     */
+    public function translateCity($key, $locale)
     {
-        // Normalize the location key (lowercase, no spaces)
-        $key = strtolower(str_replace(' ', '_', $locationName));
-        
-        // Set locale if provided
-        if ($locale) {
-            app()->setLocale($locale);
+        $locale = $locale ?? app()->getLocale();
+        if (!$key || !$locale) {
+            return $key;
         }
+         $translated = Lang::has("places.{$key}") 
+         ? trans("places.{$key}") 
+         : $key;
+     
+        // Restore original locale
+        app()->setLocale($locale);
         
-        // Check if translation exists
-        if (Lang::has('places.' . $key)) {
-            return trans('places.' . $key);
-        }
-        
-        // Return original if no translation exists
-        return $locationName;
+        return $translated;
     }
 }

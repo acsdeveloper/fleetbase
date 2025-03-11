@@ -9,7 +9,7 @@ return [
     'ahmedabad' => 'Ahmedabad',
     'pune' => 'Pune',
    'BERLIN 10115 - GERMANY' => 'BERLÍN 10115 - ALEMANIA',
-   'LEIPZIG' => 'LEIPZIG',
+   'LEIPZIG' => 'LEIPZIGa89',
    'HAMBURG' => 'HAMBURGO',
    'MUNICH' => 'MÚNICH',
    'COLOGNE' => 'COLONIA',

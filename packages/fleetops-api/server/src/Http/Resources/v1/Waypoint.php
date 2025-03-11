@@ -27,22 +27,40 @@ class Waypoint extends FleetbaseResource
     public function toArray($request)
     {
         $this->waypoint = $waypoint = $this->getWaypoint();
-        $locale = $request->header('X-Locale');
-        $locationService = app(LocationTranslatorService::class);
-
 
         return [
             'id'                     => $this->when(Http::isInternalRequest(), $this->id, $this->public_id),
             'uuid'                   => $this->when(Http::isInternalRequest(), $this->uuid),
             'public_id'              => $this->when(Http::isInternalRequest(), $this->public_id),
-            'waypoint_public_id'     => $this->when(Http::isInternalRequest(), $waypoint->public_id),
-            'customer_uuid'          => $this->when(Http::isInternalRequest(), $waypoint->customer_uuid),
-            'customer_type'          => $this->when(Http::isInternalRequest(), $waypoint->customer_type),
-            'order'                  => $waypoint->order,
-            'tracking'               => $waypoint->tracking,
-            'status'                 => $waypoint->status,
-            'status_code'            => $waypoint->status_code,
-            'name'                   => $locale ? $locationService->translateLocation($this->name, $locale) : $this->name,
+            'waypoint_public_id'     => $this->when(
+    Http::isInternalRequest() && $waypoint !== null, 
+    fn() => $waypoint->public_id
+),
+            'customer_uuid'          => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->customer_uuid),
+            'customer_type'          => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->customer_type),
+            'order'                  => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->order
+            ),
+            //do this for all the following
+
+             'tracking'               => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->tracking
+            ),
+            'status'                 => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->status
+            ),
+            'status_code'            => $this->when(
+                Http::isInternalRequest() && $waypoint !== null, 
+                fn() => $waypoint->status_code
+            ),
+            'name'                   => $this->name,
             'location'               => data_get($this, 'location', new Point(0, 0)),
             'address'                => $this->address,
             'address_html'           => $this->when(Http::isInternalRequest(), $this->address_html),
@@ -59,13 +77,35 @@ class Waypoint extends FleetbaseResource
             'country_name'           => $this->when(Http::isInternalRequest(), $this->country_name),
             'phone'                  => $this->phone ?? null,
             'owner'                  => $this->when(!Http::isInternalRequest(), Resolve::resourceForMorph($this->owner_type, $this->owner_uuid)),
-            'tracking_number'        => $this->whenLoaded('trackingNumber', $waypoint->trackingNumber),
-            'customer'               => $this->setCustomerType(Resolve::resourceForMorph($waypoint->customer_type, $waypoint->customer_uuid)),
-            'type'                   => $this->type,
+            'tracking_number'        => $this->when(
+                $waypoint !== null,
+                fn() => $this->whenLoaded('trackingNumber', $waypoint->trackingNumber)
+            ),
+            'customer'               => $this->when(
+                $waypoint !== null,
+                fn() => $this->setCustomerType(Resolve::resourceForMorph($waypoint->customer_type, $waypoint->customer_uuid))
+            ),
+            'type'                   => $this->when(
+                $waypoint !== null,
+                fn() => $waypoint->type,
+                $this->type
+            ),
             'meta'                   => data_get($this, 'meta', []),
-            'eta'                    => $this->eta,
-            'updated_at'             => $this->updated_at,
-            'created_at'             => $this->created_at,
+            'eta'                    => $this->when(
+                $waypoint !== null,
+                fn() => $waypoint->eta,
+                $this->eta
+            ),
+            'updated_at'             => $this->when(
+                $waypoint !== null,
+                fn() => $waypoint->updated_at,
+                $this->updated_at
+            ),
+            'created_at'             => $this->when(
+                $waypoint !== null,
+                fn() => $waypoint->created_at,
+                $this->created_at
+            ),
         ];
     }
 
@@ -103,12 +143,10 @@ class Waypoint extends FleetbaseResource
      */
     public function toWebhookPayload($request)
     {
-        $locale = $request->header('X-Locale');
-        $locationService = app(LocationTranslatorService::class);
         return [
             'id'              => $this->public_id,
             'internal_id'     => $this->internal_id,
-            'name'            => $locale ? $locationService->translateLocation($this->name, $locale) : $this->name,
+            'name'            => $this->name,
             'type'            => data_get($this, 'type'),
             'destination'     => $this->destination ? $this->destination->public_id : null,
             'customer'        => Resolve::resourceForMorph($this->customer_type, $this->customer_uuid),

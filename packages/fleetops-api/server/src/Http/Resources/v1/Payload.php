@@ -6,6 +6,7 @@ use Fleetbase\Http\Resources\FleetbaseResource;
 use Fleetbase\Models\Model;
 use Fleetbase\Support\Http;
 use Illuminate\Support\Collection;
+use App\Services\LocationTranslatorService;
 
 class Payload extends FleetbaseResource
 {
@@ -19,7 +20,36 @@ class Payload extends FleetbaseResource
     public function toArray($request)
     {
         $withRouteETA = $request->has('with_route_eta');
-
+        //get locale from app
+        $locale = app()->getLocale();
+        $locationService = null;
+        
+        // Only instantiate the service if we have a locale
+        if ($locale) {
+            $locationService = app(LocationTranslatorService::class);
+            
+        }
+        // Get waypoints from resource
+        $waypoints = $this->whenLoaded(
+            'waypoints', 
+            function () use ($request, $locale, $locationService) {
+                $waypoints = $this->waypoints;
+                
+                // Apply translations if needed
+                if ($locale && $locationService && $waypoints) {
+                    foreach ($waypoints as $waypoint) {
+                        if (isset($waypoint->name)) {
+                            echo $locale;
+                            $waypoint->name = $locationService->translateCity($waypoint->name, $locale);
+                            // echo $waypoint->name."waypoint name";
+                        }
+                    }
+                }
+                
+                return Waypoint::collection($waypoints);
+            }
+        );
+        
         return [
             'id'                    => $this->when(Http::isInternalRequest(), $this->id, $this->public_id),
             'uuid'                  => $this->when(Http::isInternalRequest(), $this->uuid),
@@ -32,7 +62,7 @@ class Payload extends FleetbaseResource
             'pickup'                => $this->getPlace($this->pickup),
             'dropoff'               => $this->getPlace($this->dropoff),
             'return'                => new Place($this->return),
-            'waypoints'             => Waypoint::collection($this->getWaypoints($withRouteETA)),
+            'waypoints'             => $waypoints,
             'entities'              => Entity::collection($this->entities),
             'cod_amount'            => $this->cod_amount ?? null,
             'cod_currency'          => $this->cod_currency ?? null,

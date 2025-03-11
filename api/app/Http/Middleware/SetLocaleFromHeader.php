@@ -18,7 +18,7 @@ class SetLocaleFromHeader
     {
        // Check if the 'X-Locale' header exists
        $locale = $request->header('X-Locale');
-
+        
        // If the locale exists and is valid, set the locale
     //    if ($locale && in_array($locale, ['en', 'fr', 'es', 'de'])) {
         if (isset($locale)) {
