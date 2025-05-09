@@ -1274,25 +1274,40 @@ export default class OperationsOrdersIndexViewController extends BaseController 
      * @param {*} waypoints 
      * @returns 
      */
-    filterConsecutiveDuplicates(waypoints) {
-        if (!waypoints || waypoints.length <= 1) {
-          return waypoints;
+    filterAllDuplicates(waypoints) {
+    if (!waypoints || waypoints.length <= 1) {
+        return waypoints;
+    }
+    
+    const result = [];
+    const seenCoordinates = new Set();
+    
+    for (let i = 0; i < waypoints.length; i++) {
+        const current = waypoints[i];
+        
+        // Skip if waypoint is invalid
+        if (!current || current.length < 2) {
+            continue;
         }
         
-        const result = [waypoints[0]];
+        // Check if we've seen this coordinate before
+        // Round to 6 decimal places for comparison (about 10cm precision)
+        const lat = Math.round(current[0] * 1000000) / 1000000;
+        const lng = Math.round(current[1] * 1000000) / 1000000;
+        const coordKey = `${lat},${lng}`;
         
-        for (let i = 1; i < waypoints.length; i++) {
-          const current = waypoints[i];
-          const previous = result[result.length - 1];
-          
-          // Compare lat/lng values (as arrays) to detect duplicates
-          // Format: [lat, lng]
-          if (current[0] !== previous[0] || current[1] !== previous[1]) {
+        if (!seenCoordinates.has(coordKey)) {
+            // New coordinate, add it to the result
+            seenCoordinates.add(coordKey);
             result.push(current);
-          }
+        } else {
+            console.log(`Filtered duplicate waypoint at ${lat},${lng}`);
         }
-        
-        return result;
-      }
+    }
+    
+    console.log(`Filtered ${waypoints.length - result.length} duplicate waypoints`);
+    return result;
+}
+
     
 }
